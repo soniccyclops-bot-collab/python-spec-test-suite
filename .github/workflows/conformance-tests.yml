@@ -17,8 +17,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Start with CPython as reference implementation
-        # Will expand to include PyPy, Jython, etc. later
         python-version: ["3.10", "3.11", "3.12"]
         
     steps:
@@ -34,14 +32,19 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run Section 2.6 conformance tests
+    - name: Run version-appropriate conformance tests
       run: |
-        python -m pytest tests/conformance/section_2_6_numeric_literals.py -v --tb=short
+        # Run tests with version-specific markers
+        python -m pytest tests/conformance/ \
+          -v --tb=short \
+          -m "not min_version or min_version_${{ matrix.python-version }}"
         
     - name: Generate test report
       if: always()
       run: |
-        python -m pytest tests/conformance/ --json-report --json-report-file=test-report.json || true
+        python -m pytest tests/conformance/ \
+          -m "not min_version or min_version_${{ matrix.python-version }}" \
+          --json-report --json-report-file=test-report.json || true
         
     - name: Upload test results
       if: always()

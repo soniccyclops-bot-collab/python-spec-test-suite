@@ -371,7 +371,8 @@ class TestSection26CrossImplementationCompatibility:
         result = tester.parse_literal("1e308")
         assert isinstance(result, float)
     
-    @pytest.mark.skipif(sys.version_info < (3, 6), reason="Underscores added in Python 3.6")
+    @pytest.mark.min_version_3_6
+    @pytest.mark.feature_fstrings
     def test_underscore_version_compatibility(self, tester):
         """Test underscore grouping (added in Python 3.6)"""
         # This should work in Python 3.6+
