@@ -1,5 +1,9 @@
 # Python Language Reference Conformance Test Suite
 
+[![Conformance Tests](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive test suite that validates Python implementation conformance to the official [Python Language Reference](https://docs.python.org/3/reference/).
 
 ## 🎯 Goal
@@ -21,6 +25,26 @@ make check-peps
 # Full weekly maintenance cycle
 make weekly-check
 ```
+
+## 🚀 Continuous Integration
+
+### Current Implementation Coverage
+
+| Python Implementation | Version | Status |
+|----------------------|---------|--------|
+| **CPython** | 3.10, 3.11, 3.12 | [![Test Status](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml) |
+| PyPy | *Planned* | Coming Soon |
+| Jython | *Planned* | Coming Soon |
+| MicroPython | *Planned* | Coming Soon |
+
+### Automated Testing
+
+- **Daily Runs**: Tests execute automatically at 6 AM UTC
+- **PR Validation**: All pull requests require passing conformance tests
+- **Multi-Version**: Tests run against Python 3.10, 3.11, and 3.12
+- **Artifact Collection**: Test reports saved for analysis
+
+**Test Results**: Live status shows real-time conformance across implementations
 
 ## 📋 Current Status
 
