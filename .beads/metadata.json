@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "python_spec_test_suite",
+  "project_id": "d209f4d2-497f-4bf9-97f7-f5dee33ad3a4"
+}
