@@ -34,14 +34,13 @@ jobs:
         
     - name: Run version-appropriate conformance tests
       run: |
-        # Run all tests - marker filtering for version compatibility
-        python -m pytest tests/conformance/section_2_6_numeric_literals.py \
-          -v --tb=short
+        # Run all conformance tests with proper discovery
+        python -m pytest tests/conformance/ -v --tb=short
         
     - name: Generate test report
       if: always()
       run: |
-        python -m pytest tests/conformance/section_2_6_numeric_literals.py \
+        python -m pytest tests/conformance/ \
           --json-report --json-report-file=test-report.json || true
         
     - name: Upload test results
