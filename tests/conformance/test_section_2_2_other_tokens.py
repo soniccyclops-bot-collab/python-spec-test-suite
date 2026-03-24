@@ -389,12 +389,17 @@ class TestSection22StringTokens:
         prefix_sources = [
             "x = r'raw'",
             "y = b'bytes'",
-            "z = f'formatted'",
             "a = br'raw bytes'",
             "b = rb'bytes raw'",
-            "c = fr'formatted raw'",
-            "d = rf'raw formatted'"
         ]
+        
+        # F-strings require Python 3.6+
+        if sys.version_info >= (3, 6):
+            prefix_sources.extend([
+                "z = f'formatted'",
+                "c = fr'formatted raw'",
+                "d = rf'raw formatted'"
+            ])
         
         for source in prefix_sources:
             try:
