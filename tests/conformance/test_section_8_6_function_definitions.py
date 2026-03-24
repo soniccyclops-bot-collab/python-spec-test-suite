@@ -43,7 +43,7 @@ class FunctionDefinitionTester:
             # Verify the AST contains function definition
             for node in ast.walk(tree):
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    return  # Found function definition, syntax is valid
+                    return tree  # Found function definition, syntax is valid
             pytest.fail(f"Expected FunctionDef not found in parsed AST for: {source}")
         except SyntaxError as e:
             pytest.fail(f"Function syntax {source!r} failed to parse: {e}")
@@ -509,7 +509,7 @@ def complex_function(
     return {'result': 'complex'}
 """
         
-        tree = tester.assert_source_parses(complex_function)
+        tree = tester.assert_function_syntax_parses(complex_function)
         assert len(tree.body) == 1
         funcdef = tree.body[0]
         assert isinstance(funcdef, ast.FunctionDef)
