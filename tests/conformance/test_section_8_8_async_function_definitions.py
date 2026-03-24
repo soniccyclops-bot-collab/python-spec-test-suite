@@ -207,18 +207,18 @@ class TestSection88AsyncFunctionDefinitions:
             tester.assert_async_syntax_parses(source)
 
     @pytest.mark.min_version_3_6
+    @pytest.mark.min_version_3_8
     def test_async_def_with_positional_only_params(self, tester):
         """Test async def with positional-only parameters (Python 3.8+)"""
-        # Note: Positional-only syntax requires Python 3.8+, but test what we can parse
-        if sys.version_info >= (3, 8):
-            posonly_functions = [
-                "async def func(x, /, y): return x + y",
-                "async def func(x, /, y=42): return x + y", 
-                "async def func(x, /, *args): return (x, args)"
-            ]
-            
-            for source in posonly_functions:
-                tester.assert_async_syntax_parses(source)
+        # Note: Positional-only syntax requires Python 3.8+
+        posonly_functions = [
+            "async def func(x, /, y): return x + y",
+            "async def func(x, /, y=42): return x + y", 
+            "async def func(x, /, *args): return (x, args)"
+        ]
+        
+        for source in posonly_functions:
+            tester.assert_async_syntax_parses(source)
 
     def test_nested_async_functions(self, tester):
         """Test nested async function definitions"""
@@ -284,18 +284,17 @@ class TestSection88ErrorConditions:
     def test_async_await_as_reserved_keywords(self, tester):
         """Test that async/await are reserved keywords (Python 3.7+)"""
         # In Python 3.7+, async and await became fully reserved keywords
-        if sys.version_info >= (3, 7):
-            invalid_identifiers = [
-                "def async(): pass",      # async as function name
-                "def await(): pass",      # await as function name
-                "async = 42",            # async as variable name
-                "await = 42",            # await as variable name
-                "class async: pass",     # async as class name
-                "class await: pass"      # await as class name
-            ]
-            
-            for source in invalid_identifiers:
-                tester.assert_async_syntax_error(source)
+        invalid_identifiers = [
+            "def async(): pass",      # async as function name
+            "def await(): pass",      # await as function name
+            "async = 42",            # async as variable name
+            "await = 42",            # await as variable name
+            "class async: pass",     # async as class name
+            "class await: pass"      # await as class name
+        ]
+        
+        for source in invalid_identifiers:
+            tester.assert_async_syntax_error(source)
 
 
 class TestSection88AsyncSpecialCases:
@@ -431,12 +430,11 @@ class TestSection88CrossImplementationCompatibility:
     @pytest.mark.min_version_3_8
     def test_positional_only_in_async_functions(self, tester):
         """Test positional-only parameters in async functions (Python 3.8+)"""
-        if sys.version_info >= (3, 8):
-            posonly_async = [
-                "async def func(a, b, /, c, d): return a + b + c + d",
-                "async def func(a, /, *, b): return a + b",
-                "async def func(a, b=1, /, c=2, *, d=3): return a + b + c + d"
-            ]
-            
-            for source in posonly_async:
-                tester.assert_async_syntax_parses(source)
+        posonly_async = [
+            "async def func(a, b, /, c, d): return a + b + c + d",
+            "async def func(a, /, *, b): return a + b",
+            "async def func(a, b=1, /, c=2, *, d=3): return a + b + c + d"
+        ]
+        
+        for source in posonly_async:
+            tester.assert_async_syntax_parses(source)
