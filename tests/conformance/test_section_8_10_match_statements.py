@@ -34,6 +34,7 @@ import sys
 from typing import Any
 
 
+@pytest.mark.min_version_3_10
 class MatchStatementTester:
     """Helper class for testing match statement conformance.
     
@@ -47,9 +48,6 @@ class MatchStatementTester:
         Args:
             source: Python match statement source code
         """
-        if sys.version_info < (3, 10):
-            pytest.skip("Match statements require Python 3.10+")
-            
         try:
             tree = ast.parse(source)
             # Verify the AST contains match statement
@@ -66,9 +64,6 @@ class MatchStatementTester:
         Args:
             source: Python match source code that should be invalid
         """
-        if sys.version_info < (3, 10):
-            pytest.skip("Match statements require Python 3.10+")
-            
         with pytest.raises(SyntaxError):
             ast.parse(source)
 
@@ -81,9 +76,6 @@ class MatchStatementTester:
         Returns:
             ast.Match node
         """
-        if sys.version_info < (3, 10):
-            pytest.skip("Match statements require Python 3.10+")
-            
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.Match):
@@ -91,6 +83,7 @@ class MatchStatementTester:
         pytest.fail(f"No Match node found in: {source}")
 
 
+@pytest.mark.min_version_3_10
 @pytest.mark.min_version_3_10
 class TestSection810BasicMatchStatements:
     """Test Section 8.10: Basic Match Statements"""
@@ -229,6 +222,7 @@ class TestSection810BasicMatchStatements:
 
 
 @pytest.mark.min_version_3_10
+@pytest.mark.min_version_3_10
 class TestSection810SequencePatterns:
     """Test sequence pattern matching"""
     
@@ -338,6 +332,7 @@ class TestSection810SequencePatterns:
 
 
 @pytest.mark.min_version_3_10
+@pytest.mark.min_version_3_10
 class TestSection810MappingPatterns:
     """Test mapping (dictionary) pattern matching"""
     
@@ -412,6 +407,7 @@ class TestSection810MappingPatterns:
             tester.assert_match_syntax_parses(source)
 
 
+@pytest.mark.min_version_3_10
 @pytest.mark.min_version_3_10
 class TestSection810ClassPatterns:
     """Test class pattern matching"""
@@ -488,6 +484,7 @@ class TestSection810ClassPatterns:
 
 
 @pytest.mark.min_version_3_10
+@pytest.mark.min_version_3_10
 class TestSection810GuardPatterns:
     """Test guard expressions in patterns"""
     
@@ -553,6 +550,7 @@ class TestSection810GuardPatterns:
 
 
 @pytest.mark.min_version_3_10
+@pytest.mark.min_version_3_10
 class TestSection810OrPatterns:
     """Test or patterns with | operator"""
     
@@ -616,6 +614,7 @@ class TestSection810OrPatterns:
 
 
 @pytest.mark.min_version_3_10
+@pytest.mark.min_version_3_10
 class TestSection810AsPatterns:
     """Test as patterns for binding"""
     
@@ -666,6 +665,7 @@ class TestSection810AsPatterns:
             tester.assert_match_syntax_parses(source)
 
 
+@pytest.mark.min_version_3_10
 @pytest.mark.min_version_3_10
 class TestSection810ErrorConditions:
     """Test error conditions for match statements"""
@@ -738,6 +738,7 @@ case [*a, *b]:
                 pass
 
 
+@pytest.mark.min_version_3_10
 @pytest.mark.min_version_3_10
 class TestSection810CrossImplementationCompatibility:
     """Test match statement features across Python implementations"""

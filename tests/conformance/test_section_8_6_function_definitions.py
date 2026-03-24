@@ -222,20 +222,19 @@ class TestSection86ParameterLists:
     @pytest.mark.min_version_3_8
     def test_positional_only_parameters(self, tester):
         """Test positional-only parameter syntax (Python 3.8+)"""
-        if sys.version_info >= (3, 8):
-            # Positional-only parameters with / separator
-            posonly_params = [
-                "def func(x, /): pass",
-                "def func(x, y, /): pass",
-                "def func(x, /, y): pass", 
-                "def func(x, y, /, z): pass",
-                "def func(a, b=1, /): pass",
-                "def func(a, /, b, *, c): pass",
-                "def func(a, /, b, *args, **kwargs): pass"
-            ]
-            
-            for source in posonly_params:
-                tester.assert_function_syntax_parses(source)
+        # Positional-only parameters with / separator
+        posonly_params = [
+            "def func(x, /): pass",
+            "def func(x, y, /): pass",
+            "def func(x, /, y): pass", 
+            "def func(x, y, /, z): pass",
+            "def func(a, b=1, /): pass",
+            "def func(a, /, b, *, c): pass",
+            "def func(a, /, b, *args, **kwargs): pass"
+        ]
+        
+        for source in posonly_params:
+            tester.assert_function_syntax_parses(source)
 
     def test_complex_parameter_combinations(self, tester):
         """Test complex parameter list combinations"""
@@ -244,25 +243,25 @@ class TestSection86ParameterLists:
             "def func(a, b=1, *args, c, d=2, **kwargs): pass",
             "def func(req, opt=None, *args, kwonly, kwopt=42, **kwargs): pass"
         ]
-        
-        # Add Python 3.8+ positional-only if available
-        if sys.version_info >= (3, 8):
-            complex_params.extend([
-                "def func(a, b, /, c, d=1, *args, e, f=2, **kwargs): pass",
-                "def func(posonly, /, normal, default=1, *args, kwonly, kwdefault=2, **kwargs): pass"
-            ])
-        
         for source in complex_params:
+            tester.assert_function_syntax_parses(source)
+
+    @pytest.mark.min_version_3_8 
+    def test_complex_parameters_with_positional_only(self, tester):
+        """Test complex parameter combinations with positional-only (Python 3.8+)"""
+        posonly_complex_params = [
+            "def func(a, b, /, c, d=1, *args, e, f=2, **kwargs): pass",
+            "def func(posonly, /, normal, default=1, *args, kwonly, kwdefault=2, **kwargs): pass"
+        ]
+        
+        for source in posonly_complex_params:
             tester.assert_function_syntax_parses(source)
 
     def test_parameter_list_ast_structure(self, tester):
         """Test parameter list AST structure"""
-        # Verify AST structure for complex parameters
-        if sys.version_info >= (3, 8):
-            source = "def func(a, /, b=1, c=2, *args, d, e=3, **kwargs): pass"
-        else:
-            source = "def func(a, b=1, c=2, *args, d, e=3, **kwargs): pass"
-            
+        # Verify AST structure for complex parameters  
+        source = "def func(a, b=1, c=2, *args, d, e=3, **kwargs): pass"
+        
         funcdef = tester.get_function_def_from_source(source)
         args = funcdef.args
         
