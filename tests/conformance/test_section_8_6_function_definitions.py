@@ -446,15 +446,14 @@ class TestSection86ErrorConditions:
     @pytest.mark.min_version_3_8
     def test_invalid_positional_only_syntax(self, tester):
         """Test invalid positional-only parameter syntax (Python 3.8+)"""
-        if sys.version_info >= (3, 8):
-            invalid_posonly = [
-                "def func(/, x): pass",      # / must follow parameters
-                "def func(x, /, /, y): pass", # Multiple / separators
-                "def func(x, /, *args, /): pass" # / after *args
-            ]
-            
-            for source in invalid_posonly:
-                tester.assert_function_syntax_error(source)
+        invalid_posonly = [
+            "def func(/, x): pass",      # / must follow parameters
+            "def func(x, /, /, y): pass", # Multiple / separators
+            "def func(x, /, *args, /): pass" # / after *args
+        ]
+        
+        for source in invalid_posonly:
+            tester.assert_function_syntax_error(source)
 
     def test_reserved_keywords_as_function_names(self, tester):
         """Test reserved keywords cannot be function names"""
@@ -494,9 +493,31 @@ class TestSection86ComplexFunctionFeatures:
 
     def test_function_with_all_features(self, tester):
         """Test function with multiple advanced features"""
-        # Complex function with many features
-        if sys.version_info >= (3, 8):
-            complex_function = """
+        # Complex function with many features (without positional-only)
+        complex_function = """
+@cache
+@validate('input')
+def complex_function(
+    normal: float,
+    normal_default: bool = True,
+    *args: int,
+    keyword_only: str,
+    keyword_default: dict = None,
+    **kwargs: Any
+) -> Optional[Dict[str, Any]]:
+    \"\"\"A complex function demonstrating all parameter types.\"\"\"
+    return {'result': 'complex'}
+"""
+        
+        tree = tester.assert_source_parses(complex_function)
+        assert len(tree.body) == 1
+        funcdef = tree.body[0]
+        assert isinstance(funcdef, ast.FunctionDef)
+        
+    @pytest.mark.min_version_3_8
+    def test_function_with_positional_only_features(self, tester):
+        """Test function with positional-only parameters (Python 3.8+)"""
+        complex_posonly_function = """
 @cache
 @validate('input')
 def complex_function(
@@ -513,23 +534,8 @@ def complex_function(
     \"\"\"A complex function demonstrating all parameter types.\"\"\"
     return {'result': 'complex'}
 """
-        else:
-            complex_function = """
-@cache
-@validate('input')
-def complex_function(
-    normal: float,
-    normal_default: bool = True,
-    *args: int,
-    keyword_only: str,
-    keyword_default: dict = None,
-    **kwargs: Any
-) -> Optional[Dict[str, Any]]:
-    \"\"\"A complex function demonstrating parameter types.\"\"\"
-    return {'result': 'complex'}
-"""
         
-        tester.assert_function_syntax_parses(complex_function)
+        tester.assert_function_syntax_parses(complex_posonly_function)
 
     def test_generator_function_syntax(self, tester):
         """Test generator function syntax"""

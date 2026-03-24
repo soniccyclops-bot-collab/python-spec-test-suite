@@ -506,19 +506,19 @@ class ComplexClass(Base1, Base2, metaclass=CustomMeta):
         
         tester.assert_class_syntax_parses(complex_class)
 
+    @pytest.mark.min_version_3_5  
     def test_generic_class_syntax(self, tester):
         """Test generic class syntax (Python 3.5+ type hints)"""
         # Generic classes (syntax only, not runtime)
-        if sys.version_info >= (3, 5):
-            generic_classes = [
-                "class Generic[T]: pass",  # Python 3.12+ syntax
-                "class Container: pass",   # Will add type hints in comments
-                "class Mapping: pass"     # Generic-style naming
-            ]
-            
-            # Test what's actually parseable
-            for source in generic_classes[1:]:  # Skip new generic syntax for now
-                tester.assert_class_syntax_parses(source)
+        generic_classes = [
+            "class Generic[T]: pass",  # Python 3.12+ syntax
+            "class Container: pass",   # Will add type hints in comments
+            "class Mapping: pass"     # Generic-style naming
+        ]
+        
+        # Test what's actually parseable
+        for source in generic_classes[1:]:  # Skip new generic syntax for now
+            tester.assert_class_syntax_parses(source)
 
     def test_abstract_base_class_syntax(self, tester):
         """Test abstract base class patterns"""
