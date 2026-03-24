@@ -399,23 +399,22 @@ class TestSection22StringTokens:
         for source in basic_prefix_sources:
             tree = tester.assert_source_parses(source)
             assert tester.contains_token_type(source, token.STRING)
+
+    @pytest.mark.feature_fstrings
+    def test_fstring_token_prefixes(self, tester):
+        """Test f-string prefix variations"""
+        # F-strings require Python 3.6+
+        fstring_sources = [
+            "z = f'formatted'",
+            "c = fr'formatted raw'", 
+            "d = rf'raw formatted'"
+        ]
         
-        # Test f-strings separately with proper version handling
-        if sys.version_info >= (3, 6):
-            fstring_sources = [
-                "z = f'formatted'",
-                "c = fr'formatted raw'", 
-                "d = rf'raw formatted'"
-            ]
-            
-            for source in fstring_sources:
-                try:
-                    tree = tester.assert_source_parses(source)
-                    # F-strings may tokenize differently in some implementations
-                    # Just verify they parse correctly rather than specific tokenization
-                    assert len(tree.body) == 1
-                except SyntaxError:
-                    pytest.skip("F-strings not fully supported in this environment")
+        for source in fstring_sources:
+            tree = tester.assert_source_parses(source)
+            # F-strings may tokenize differently in some implementations
+            # Just verify they parse correctly rather than specific tokenization
+            assert len(tree.body) == 1
 
     def test_bytes_literal_tokens(self, tester):
         """Test bytes literal tokenization"""

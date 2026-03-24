@@ -380,14 +380,9 @@ match x:
     case 2:
         result = "two"
 """
-        try:
-            tree = tester.assert_source_parses(match_source)
-        except SyntaxError:
-            if sys.version_info < (3, 10):
-                pytest.skip("Match statements require Python 3.10+")
-            else:
-                raise
+        tree = tester.assert_source_parses(match_source)
 
+    @pytest.mark.min_version_3_10
     def test_underscore_wildcard_pattern(self, tester):
         """Test underscore as wildcard in match statements"""
         # _ is soft keyword in match context
@@ -396,8 +391,7 @@ match x:
         tester.assert_identifier_valid("_")
         
         # Should work as wildcard in match context
-        if sys.version_info >= (3, 10):
-            wildcard_source = """
+        wildcard_source = """
 x = 1
 match x:
     case 1:
@@ -405,10 +399,7 @@ match x:
     case _:
         result = "other"
 """
-            try:
-                tester.assert_source_parses(wildcard_source)
-            except SyntaxError:
-                pytest.skip("Match statements not fully supported")
+        tester.assert_source_parses(wildcard_source)
 
     @pytest.mark.min_version_3_12
     def test_type_soft_keyword(self, tester):
@@ -419,12 +410,8 @@ match x:
         tester.assert_identifier_valid("type")
         
         # Should work in type statement context (if supported)
-        if sys.version_info >= (3, 12):
-            type_source = "type Point = tuple[float, float]"
-            try:
-                tester.assert_source_parses(type_source)
-            except SyntaxError:
-                pytest.skip("Type statements not fully supported in this implementation")
+        type_source = "type Point = tuple[float, float]"
+        tester.assert_source_parses(type_source)
 
 
 class TestSection23ReservedIdentifierClasses:

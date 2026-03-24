@@ -723,9 +723,6 @@ class TestSection3Metaclasses:
         """Test __init_subclass__ customization hook"""
         # Language Reference: __init_subclass__ called when class is subclassed
         
-        if sys.version_info < (3, 6):
-            pytest.skip("__init_subclass__ requires Python 3.6+")
-        
         class BaseWithHook:
             subclasses = []
             
@@ -750,11 +747,10 @@ class TestSection3Metaclasses:
         creation_log = []
         
         class TrackedMeta(type):
-            if sys.version_info >= (3, 0):  # __prepare__ available in Python 3+
-                @classmethod
-                def __prepare__(cls, name, bases):
-                    creation_log.append(f"prepare: {name}")
-                    return {}
+            @classmethod
+            def __prepare__(cls, name, bases):
+                creation_log.append(f"prepare: {name}")
+                return {}
             
             def __new__(cls, name, bases, namespace):
                 creation_log.append(f"new: {name}")
@@ -767,9 +763,8 @@ class TestSection3Metaclasses:
         class TrackedClass(metaclass=TrackedMeta):
             pass
         
-        # Verify creation order (__prepare__ may not be called in all versions)
-        if sys.version_info >= (3, 0):
-            assert "prepare: TrackedClass" in creation_log
+        # Verify creation order (__prepare__ available in Python 3.0+)
+        assert "prepare: TrackedClass" in creation_log
         assert "new: TrackedClass" in creation_log
         assert "init: TrackedClass" in creation_log
 
