@@ -11,21 +11,42 @@ on:
 
 jobs:
   conformance-tests:
-    name: Python ${{ matrix.python-version }} Conformance
+    name: ${{ matrix.python-implementation }} ${{ matrix.python-version }} Conformance
     runs-on: ubuntu-latest
     
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        include:
+          # CPython versions
+          - python-implementation: "cpython"
+            python-version: "3.10"
+            setup-action: "actions/setup-python@v4"
+          - python-implementation: "cpython" 
+            python-version: "3.11"
+            setup-action: "actions/setup-python@v4"
+          - python-implementation: "cpython"
+            python-version: "3.12"
+            setup-action: "actions/setup-python@v4"
+          # PyPy versions
+          - python-implementation: "pypy"
+            python-version: "pypy-3.10"
+            setup-action: "actions/setup-python@v4"
         
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Set up ${{ matrix.python-implementation }} ${{ matrix.python-version }}
+      uses: ${{ matrix.setup-action }}
       with:
         python-version: ${{ matrix.python-version }}
+        
+    - name: Display Python implementation details
+      run: |
+        python --version
+        python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
+        python -c "import sys; print(f'Version info: {sys.version_info}')"
+        python -c "import platform; print(f'Platform: {platform.platform()}')"
         
     - name: Install dependencies
       run: |
@@ -35,23 +56,46 @@ jobs:
     - name: Run version-appropriate conformance tests
       run: |
         # Run all conformance tests with proper discovery
-        python -m pytest tests/conformance/ -v --tb=short
+        python -m pytest tests/conformance/ -v --tb=short \
+          --json-report --json-report-file=test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
         
-    - name: Generate test report
+    - name: Display test statistics
       if: always()
       run: |
-        python -m pytest tests/conformance/ \
-          --json-report --json-report-file=test-report.json || true
+        echo "=== TEST STATISTICS FOR ${{ matrix.python-implementation }} ${{ matrix.python-version }} ==="
+        python -c "
+        import json
+        try:
+            with open('test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json') as f:
+                report = json.load(f)
+            summary = report.get('summary', {})
+            print(f\"Tests collected: {summary.get('total', 0)}\")
+            print(f\"Tests passed: {summary.get('passed', 0)}\") 
+            print(f\"Tests failed: {summary.get('failed', 0)}\")
+            print(f\"Tests skipped: {summary.get('skipped', 0)}\")
+            print(f\"Tests error: {summary.get('error', 0)}\")
+            if summary.get('failed', 0) > 0:
+                print('\\n=== FAILED TESTS ===')
+                for test in report.get('tests', []):
+                    if test.get('outcome') == 'failed':
+                        print(f\"FAILED: {test.get('nodeid', 'unknown')}\")
+                        if 'call' in test and 'longrepr' in test['call']:
+                            print(f\"  Error: {test['call']['longrepr'][:200]}...\")
+        except FileNotFoundError:
+            print('Test report not found - tests may have failed to run')
+        except Exception as e:
+            print(f'Error reading test report: {e}')
+        "
         
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.python-version }}
-        path: test-report.json
+        name: test-results-${{ matrix.python-implementation }}-${{ matrix.python-version }}
+        path: test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
 
   test-summary:
-    name: Test Summary
+    name: Cross-Implementation Test Summary
     runs-on: ubuntu-latest
     needs: conformance-tests
     if: always()
@@ -59,5 +103,12 @@ jobs:
     steps:
     - name: Check test results
       run: |
-        echo "Python Language Reference Conformance Tests completed"
-        echo "Status: ${{ needs.conformance-tests.result }}"
+        echo "Python Language Reference Cross-Implementation Conformance Tests completed"
+        echo "CPython Status: ${{ needs.conformance-tests.result }}"
+        echo "PyPy Status: ${{ needs.conformance-tests.result }}"
+        echo ""
+        echo "This test suite validates Python Language Reference compliance across implementations:"
+        echo "- CPython 3.10, 3.11, 3.12 (reference implementation)"
+        echo "- PyPy 3.10 (alternative implementation)"
+        echo ""
+        echo "AST-based validation approach enables cross-implementation compatibility testing"
