@@ -21,23 +21,19 @@ jobs:
           # CPython versions
           - python-implementation: "cpython"
             python-version: "3.10"
-            setup-action: "actions/setup-python@v4"
           - python-implementation: "cpython" 
             python-version: "3.11"
-            setup-action: "actions/setup-python@v4"
           - python-implementation: "cpython"
             python-version: "3.12"
-            setup-action: "actions/setup-python@v4"
           # PyPy versions
           - python-implementation: "pypy"
             python-version: "pypy-3.10"
-            setup-action: "actions/setup-python@v4"
         
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up ${{ matrix.python-implementation }} ${{ matrix.python-version }}
-      uses: ${{ matrix.setup-action }}
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
         
