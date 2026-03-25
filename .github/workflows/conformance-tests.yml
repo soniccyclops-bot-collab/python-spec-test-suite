@@ -28,32 +28,110 @@ jobs:
           # PyPy versions
           - python-implementation: "pypy"
             python-version: "pypy-3.10"
+          # GraalPython
+          - python-implementation: "graalpython"
+            python-version: "3.10"
         
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up CPython/PyPy
+      if: matrix.python-implementation != 'graalpython'
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+        
+    - name: Set up GraalPython
+      if: matrix.python-implementation == 'graalpython'
+      run: |
+        echo "Installing GraalVM and GraalPython..."
+        
+        # Install required dependencies
+        sudo apt-get update
+        sudo apt-get install -y wget curl unzip
+        
+        # Download and install GraalVM
+        GRAALVM_VERSION="23.0.1"
+        GRAALVM_JAVA_VERSION="17"
+        
+        wget -q "https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-${GRAALVM_JAVA_VERSION}.${GRAALVM_VERSION}/graalvm-community-jdk-${GRAALVM_JAVA_VERSION}.${GRAALVM_VERSION}_linux-x64_bin.tar.gz" -O graalvm.tar.gz
+        
+        tar -xzf graalvm.tar.gz
+        sudo mv graalvm-community-openjdk-${GRAALVM_JAVA_VERSION}.${GRAALVM_VERSION}+8.1 /opt/graalvm
+        
+        # Set up environment
+        export JAVA_HOME=/opt/graalvm
+        export PATH=/opt/graalvm/bin:$PATH
+        echo "JAVA_HOME=/opt/graalvm" >> $GITHUB_ENV
+        echo "/opt/graalvm/bin" >> $GITHUB_PATH
+        
+        # Verify Java installation
+        java -version
+        
+        # Install GraalPython using gu (GraalVM Updater)
+        echo "Installing GraalPython component..."
+        gu install python || {
+          echo "Trying alternative GraalPython installation..."
+          # Try downloading and installing GraalPython manually
+          wget -q "https://github.com/oracle/graalpython/releases/download/graal-23.0.1/graalpython-installable-svm-java17-linux-amd64-23.0.1.jar" -O graalpython.jar
+          gu install -L graalpython.jar
+        }
+        
+        # Create python symlink for GraalPython
+        sudo ln -sf /opt/graalvm/bin/graalpython /usr/local/bin/python
+        sudo ln -sf /opt/graalvm/bin/graalpython /usr/local/bin/python3
+        
+        # Verify GraalPython installation
+        echo "Verifying GraalPython installation..."
+        graalpython --version
+        python --version
+        
+        # Test basic functionality
+        graalpython -c "print('GraalPython installed successfully')"
+        
+        # Test AST module availability
+        graalpython -c "import ast; print('AST module available')"
     
     - name: Display Python implementation details
       run: |
-        python --version
-        python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
-        python -c "import sys; print(f'Version info: {sys.version_info}')"
-        python -c "import platform; print(f'Platform: {platform.platform()}')"
+        if [[ "${{ matrix.python-implementation }}" == "graalpython" ]]; then
+          echo "=== GraalPython Implementation Details ==="
+          graalpython --version
+          graalpython -c "import sys; print(f'Implementation: {sys.implementation.name}')"
+          graalpython -c "import sys; print(f'Version info: {sys.version_info}')"
+          graalpython -c "import platform; print(f'Platform: {platform.platform()}')"
+        else
+          python --version
+          python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
+          python -c "import sys; print(f'Version info: {sys.version_info}')"
+          python -c "import platform; print(f'Platform: {platform.platform()}')"
+        fi
         
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        if [[ "${{ matrix.python-implementation }}" == "graalpython" ]]; then
+          # GraalPython uses graalpython command directly
+          graalpython -m pip install --upgrade pip
+          graalpython -m pip install -r requirements.txt
+        else
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        fi
         
     - name: Run conformance tests
       run: |
-        # Run all conformance tests with proper discovery
-        python -m pytest tests/conformance/ -v --tb=short \
-          --json-report --json-report-file=test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
+        if [[ "${{ matrix.python-implementation }}" == "graalpython" ]]; then
+          # Run all conformance tests with GraalPython
+          echo "=== GRAALPYTHON PYTHON LANGUAGE REFERENCE CONFORMANCE TESTS ==="
+          echo "Running FULL 1,412-test conformance suite with GraalPython..."
+          
+          graalpython -m pytest tests/conformance/ -v --tb=short \
+            --json-report --json-report-file=test-report-graalpython-3.10.json
+        else
+          # Run all conformance tests with proper discovery
+          python -m pytest tests/conformance/ -v --tb=short \
+            --json-report --json-report-file=test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
+        fi
         
     - name: Display test statistics
       if: always()
@@ -102,10 +180,12 @@ jobs:
         echo "Python Language Reference Cross-Implementation Conformance Tests completed"
         echo "CPython Status: ${{ needs.conformance-tests.result }}"
         echo "PyPy Status: ${{ needs.conformance-tests.result }}"
+        echo "GraalPython Status: ${{ needs.conformance-tests.result }}"
         echo ""
         echo "This test suite validates Python Language Reference compliance across implementations:"
         echo "- CPython 3.10, 3.11, 3.12 (reference C implementation)"
-        echo "- PyPy 3.10 (high-performance JIT implementation)" 
+        echo "- PyPy 3.10 (high-performance JIT implementation)"
+        echo "- GraalPython 3.10 (GraalVM polyglot implementation)"
         echo ""
         echo "Cross-implementation validation approach proves Language Reference compatibility"
-        echo "Both implementations run the ACTUAL 1,412-test conformance suite"
+        echo "All three implementations run the ACTUAL 1,412-test conformance suite"
