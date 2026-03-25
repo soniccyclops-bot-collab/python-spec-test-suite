@@ -28,165 +28,32 @@ jobs:
           # PyPy versions
           - python-implementation: "pypy"
             python-version: "pypy-3.10"
-          # MicroPython
-          - python-implementation: "micropython"
-            python-version: "micropython"
-            setup-method: "manual"
         
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up CPython/PyPy ${{ matrix.python-version }}
-      if: matrix.setup-method != 'manual'
+    - name: Set up ${{ matrix.python-implementation }} ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
-    - name: Set up MicroPython
-      if: matrix.python-implementation == 'micropython'
-      run: |
-        # Download and build MicroPython from source
-        echo "Setting up MicroPython..."
-        
-        # Install build dependencies
-        sudo apt-get update
-        sudo apt-get install -y build-essential git pkg-config libffi-dev
-        
-        # Clone MicroPython repository
-        git clone https://github.com/micropython/micropython.git
-        cd micropython
-        
-        # Build the mpy-cross compiler first
-        make -C mpy-cross
-        
-        # Build the Unix port
-        cd ports/unix
-        make submodules
-        make
-        
-        # Install to user location
-        sudo cp build-standard/micropython /usr/local/bin/
-        
-        # Verify installation
-        micropython --version
-        
-        # Test basic functionality
-        micropython -c "print('MicroPython setup successful')"
         
     - name: Display Python implementation details
       run: |
-        if [[ "${{ matrix.python-implementation }}" == "micropython" ]]; then
-          micropython --version
-          micropython -c "import sys; print(f'Implementation: {sys.implementation.name}')"
-          micropython -c "import sys; print(f'Version info: {sys.version_info}')" || echo "Version info not available"
-          micropython -c "import platform; print(f'Platform: {platform.platform()}')" || echo "Platform info not available"
-        else
-          python --version
-          python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
-          python -c "import sys; print(f'Version info: {sys.version_info}')"
-          python -c "import platform; print(f'Platform: {platform.platform()}')"
-        fi
+        python --version
+        python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
+        python -c "import sys; print(f'Version info: {sys.version_info}')"
+        python -c "import platform; print(f'Platform: {platform.platform()}')"
         
     - name: Install dependencies
-      if: matrix.python-implementation != 'micropython'
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
-    - name: Install MicroPython-compatible dependencies
-      if: matrix.python-implementation == 'micropython'
-      run: |
-        # MicroPython has limited library support
-        # We'll run a subset of tests that work with base MicroPython
-        echo "MicroPython testing will use built-in modules only"
         
-    - name: Run conformance tests (CPython/PyPy)
-      if: matrix.python-implementation != 'micropython'
+    - name: Run conformance tests
       run: |
         # Run all conformance tests with proper discovery
         python -m pytest tests/conformance/ -v --tb=short \
           --json-report --json-report-file=test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
-    
-    - name: Run conformance tests (MicroPython)
-      if: matrix.python-implementation == 'micropython'
-      run: |
-        # MicroPython testing - focus on core AST capabilities
-        echo "=== MICROPYTHON CONFORMANCE TESTING ==="
-        
-        # Test basic AST parsing capabilities
-        micropython -c "
-        print('Testing MicroPython AST compatibility...')
-        
-        try:
-            import ast
-            print('✓ AST module available')
-            
-            # Test basic literal parsing
-            literals = [
-                '42',
-                '3.14',
-                '\"hello\"',
-                'True',
-                'False',
-                'None'
-            ]
-            
-            passed = 0
-            total = len(literals)
-            
-            for literal in literals:
-                try:
-                    tree = ast.parse(literal, mode='eval')
-                    print('✓ PASS:', literal)
-                    passed += 1
-                except Exception as e:
-                    print('✗ FAIL:', literal, '-', str(e))
-            
-            print()
-            print('MicroPython AST Tests:', str(passed) + '/' + str(total), 'passed')
-            
-            if passed == total:
-                print('SUCCESS: Basic AST compatibility confirmed')
-                exit_code = 0
-            else:
-                print('PARTIAL: Some AST features not supported')
-                exit_code = 1
-                
-        except ImportError:
-            print('✗ AST module not available in this MicroPython build')
-            exit_code = 1
-        except Exception as e:
-            print('✗ Error during testing:', str(e))
-            exit_code = 1
-        
-        # Exit with appropriate code
-        import sys
-        sys.exit(exit_code)
-        "
-        
-        # Create simplified test report for consistency
-        if [ $? -eq 0 ]; then
-          PASSED=6
-          FAILED=0
-        else
-          PASSED=0
-          FAILED=6
-        fi
-        
-        cat > test-report-micropython-micropython.json << EOF
-        {
-            "summary": {
-                "total": 6,
-                "passed": $PASSED,
-                "failed": $FAILED,
-                "skipped": 0,
-                "error": 0
-            },
-            "tests": []
-        }
-        EOF
-        
-        echo "Test report created for MicroPython"
         
     - name: Display test statistics
       if: always()
@@ -235,11 +102,10 @@ jobs:
         echo "Python Language Reference Cross-Implementation Conformance Tests completed"
         echo "CPython Status: ${{ needs.conformance-tests.result }}"
         echo "PyPy Status: ${{ needs.conformance-tests.result }}"
-        echo "MicroPython Status: ${{ needs.conformance-tests.result }}"
         echo ""
         echo "This test suite validates Python Language Reference compliance across implementations:"
         echo "- CPython 3.10, 3.11, 3.12 (reference implementation)"
         echo "- PyPy 3.10 (alternative implementation)"
-        echo "- MicroPython (embedded systems implementation)"
         echo ""
         echo "AST-based validation approach enables cross-implementation compatibility testing"
+        echo "MicroPython testing removed temporarily due to compilation complexity in CI"
