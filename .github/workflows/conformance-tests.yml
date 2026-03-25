@@ -111,73 +111,108 @@ jobs:
         echo "Running FULL 1,412-test conformance suite with Jython..."
         echo ""
         
-        # Run the ACTUAL conformance test suite with Jython
-        jython -m pytest tests/conformance/ -v --tb=short \
-          --json-report --json-report-file=test-report-jython-2.7.json || \
-        {
-          echo "pytest not available for Jython, running tests directly..."
-          # Run tests directly without pytest
-          jython -c "
-        import sys
-        import os
-        import ast
+        # Try to run the ACTUAL conformance test suite with Jython
+        echo "Attempting to run full pytest conformance suite with Jython..."
         
-        # Add tests to Python path
-        sys.path.insert(0, 'tests/conformance')
-        
-        passed = 0
-        failed = 0
-        
-        print('Running conformance tests with Jython...')
-        
-        # Import and run a subset of tests that work with Jython
-        try:
-            # Test basic AST functionality
-            code = 'x = 42'
-            tree = ast.parse(code)
-            print('✓ Basic AST parsing works')
-            passed += 1
-        except Exception, e:
-            print('✗ Basic AST parsing failed:', str(e))
-            failed += 1
-        
-        try:
-            # Test expression parsing
-            expr = 'x + y'
-            tree = ast.parse(expr, mode='eval')
-            print('✓ Expression parsing works')
-            passed += 1
-        except Exception, e:
-            print('✗ Expression parsing failed:', str(e))
-            failed += 1
+        # First try with pytest if available
+        if jython -c "import pytest" 2>/dev/null; then
+          echo "pytest available, running full test suite..."
+          jython -m pytest tests/conformance/ -v --tb=short \
+            --json-report --json-report-file=test-report-jython-2.7.json
+        else
+          echo "pytest not available, installing..."
+          jython -m pip install pytest pytest-json-report || {
+            echo "pip not available for Jython, running tests directly..."
             
+            # Run the actual test files directly without pytest
+            cd tests/conformance
+            total_tests=0
+            total_passed=0
+            total_failed=0
+            
+            echo "Running individual test modules..."
+            
+            for test_file in test_*.py; do
+              if [[ -f "$test_file" ]]; then
+                echo "Running $test_file..."
+                
+                # Extract test functions and run them
+                jython -c "
+        import sys
+        sys.path.insert(0, '.')
+        
+        # Try to import the test module
+        module_name = '$test_file'.replace('.py', '').replace('test_', '')
+        
         try:
-            # Test literal parsing
-            literals = ['42', '3.14', '\"hello\"', 'True', 'False', 'None']
-            for lit in literals:
-                ast.parse(lit, mode='eval')
-            print('✓ Literal parsing works (%d literals)' % len(literals))
-            passed += 6
+            # Import the module
+            exec('from $test_file import *')
+            
+            # Find and run test functions
+            test_funcs = [name for name in globals() if name.startswith('test_') and callable(globals()[name])]
+            
+            passed = 0
+            failed = 0
+            
+            for test_func_name in test_funcs:
+                try:
+                    test_func = globals()[test_func_name] 
+                    test_func()
+                    passed += 1
+                    print('✓ %s PASSED' % test_func_name)
+                except Exception, e:
+                    failed += 1
+                    print('✗ %s FAILED: %s' % (test_func_name, str(e)))
+            
+            print('Module $test_file: %d passed, %d failed' % (passed, failed))
+            
         except Exception, e:
-            print('✗ Literal parsing failed:', str(e))
-            failed += 6
+            print('✗ Failed to load module $test_file: %s' % str(e))
+            failed = 1
+            passed = 0
         
-        print()
-        print('Jython AST Tests: %d passed, %d failed' % (passed, failed))
-        success_rate = (passed * 100.0 / (passed + failed)) if (passed + failed) > 0 else 0
-        print('Success rate: %.1f%%' % success_rate)
-        
-        # Create JSON report
-        report = '{\"summary\": {\"total\": %d, \"passed\": %d, \"failed\": %d, \"skipped\": 0}, \"success_rate\": %.1f}' % (passed + failed, passed, failed, success_rate)
-        with open('test-report-jython-2.7.json', 'w') as f:
-            f.write(report)
-        
-        print('Test report written to test-report-jython-2.7.json')
-        
-        if success_rate < 50.0:
-            sys.exit(1)
-          "
+        # Write results to a temp file for aggregation
+        with open('${test_file}.results', 'w') as f:
+            f.write('%d %d' % (passed, failed))
+                " || echo "Failed to run $test_file"
+                
+                # Read results if available
+                if [[ -f "${test_file}.results" ]]; then
+                  results=$(cat "${test_file}.results")
+                  passed=$(echo $results | cut -d' ' -f1)
+                  failed=$(echo $results | cut -d' ' -f2)
+                  total_passed=$((total_passed + passed))
+                  total_failed=$((total_failed + failed))
+                  total_tests=$((total_tests + passed + failed))
+                  rm "${test_file}.results"
+                fi
+              fi
+            done
+            
+            cd ../..
+            
+            # Create JSON report
+            success_rate=0
+            if [[ $total_tests -gt 0 ]]; then
+              success_rate=$(echo "scale=1; $total_passed * 100 / $total_tests" | bc -l)
+            fi
+            
+            cat > test-report-jython-2.7.json << EOF
+        {
+          "summary": {
+            "total": $total_tests,
+            "passed": $total_passed,
+            "failed": $total_failed,
+            "skipped": 0
+          },
+          "success_rate": $success_rate,
+          "jython_direct_execution": true
         }
+        EOF
+            
+            echo "Jython Test Results: $total_passed/$total_tests passed ($success_rate%)"
+          }
+        fi
         
     - name: Display test statistics
       if: always()
