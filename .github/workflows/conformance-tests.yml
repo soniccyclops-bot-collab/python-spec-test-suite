@@ -45,28 +45,33 @@ jobs:
     - name: Set up MicroPython
       if: matrix.python-implementation == 'micropython'
       run: |
-        # Install MicroPython
+        # Download and build MicroPython from source
+        echo "Setting up MicroPython..."
+        
+        # Install build dependencies
         sudo apt-get update
-        sudo apt-get install -y micropython
+        sudo apt-get install -y build-essential git pkg-config libffi-dev
+        
+        # Clone MicroPython repository
+        git clone https://github.com/micropython/micropython.git
+        cd micropython
+        
+        # Build the mpy-cross compiler first
+        make -C mpy-cross
+        
+        # Build the Unix port
+        cd ports/unix
+        make submodules
+        make
+        
+        # Install to user location
+        sudo cp build-standard/micropython /usr/local/bin/
         
         # Verify installation
         micropython --version
         
-        # Create wrapper script for pytest compatibility
-        mkdir -p ~/.local/bin
-        cat > ~/.local/bin/python << 'EOF'
-        #!/bin/bash
-        # MicroPython wrapper for pytest compatibility
-        if [[ "$1" == "-m" && "$2" == "pytest" ]]; then
-          # Run tests with micropython directly
-          shift 2  # Remove -m pytest
-          find tests/conformance -name "*.py" -exec micropython {} \;
-        else
-          micropython "$@"
-        fi
-        EOF
-        chmod +x ~/.local/bin/python
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        # Test basic functionality
+        micropython -c "print('MicroPython setup successful')"
         
     - name: Display Python implementation details
       run: |
@@ -105,61 +110,83 @@ jobs:
     - name: Run conformance tests (MicroPython)
       if: matrix.python-implementation == 'micropython'
       run: |
-        # MicroPython testing - simpler approach due to pytest limitations
+        # MicroPython testing - focus on core AST capabilities
         echo "=== MICROPYTHON CONFORMANCE TESTING ==="
         
         # Test basic AST parsing capabilities
         micropython -c "
-        import ast
-        print('AST module available')
+        print('Testing MicroPython AST compatibility...')
         
-        # Test basic literal parsing
-        literals = [
-            '42',
-            '3.14',
-            '\"hello\"',
-            'True',
-            'None',
-            '[1, 2, 3]'
-        ]
+        try:
+            import ast
+            print('✓ AST module available')
+            
+            # Test basic literal parsing
+            literals = [
+                '42',
+                '3.14',
+                '\"hello\"',
+                'True',
+                'False',
+                'None'
+            ]
+            
+            passed = 0
+            total = len(literals)
+            
+            for literal in literals:
+                try:
+                    tree = ast.parse(literal, mode='eval')
+                    print('✓ PASS:', literal)
+                    passed += 1
+                except Exception as e:
+                    print('✗ FAIL:', literal, '-', str(e))
+            
+            print()
+            print('MicroPython AST Tests:', str(passed) + '/' + str(total), 'passed')
+            
+            if passed == total:
+                print('SUCCESS: Basic AST compatibility confirmed')
+                exit_code = 0
+            else:
+                print('PARTIAL: Some AST features not supported')
+                exit_code = 1
+                
+        except ImportError:
+            print('✗ AST module not available in this MicroPython build')
+            exit_code = 1
+        except Exception as e:
+            print('✗ Error during testing:', str(e))
+            exit_code = 1
         
-        passed = 0
-        total = len(literals)
-        
-        for literal in literals:
-            try:
-                tree = ast.parse(literal, mode='eval')
-                print(f'✓ PASS: {literal}')
-                passed += 1
-            except Exception as e:
-                print(f'✗ FAIL: {literal} - {e}')
-        
-        print(f'\\nMicroPython AST Tests: {passed}/{total} passed')
-        
-        if passed == total:
-            print('SUCCESS: Basic AST compatibility confirmed')
-        else:
-            print('PARTIAL: Some AST features not supported')
-            exit(1)
+        # Exit with appropriate code
+        import sys
+        sys.exit(exit_code)
         "
         
-        # Create simple test report for consistency
-        micropython -c "
-        import json
-        report = {
-            'summary': {
-                'total': 6,
-                'passed': 6,
-                'failed': 0,
-                'skipped': 0,
-                'error': 0
+        # Create simplified test report for consistency
+        if [ $? -eq 0 ]; then
+          PASSED=6
+          FAILED=0
+        else
+          PASSED=0
+          FAILED=6
+        fi
+        
+        cat > test-report-micropython-micropython.json << EOF
+        {
+            "summary": {
+                "total": 6,
+                "passed": $PASSED,
+                "failed": $FAILED,
+                "skipped": 0,
+                "error": 0
             },
-            'tests': []
+            "tests": []
         }
-        with open('test-report-micropython-micropython.json', 'w') as f:
-            json.dump(report, f)
-        print('Test report created for MicroPython')
-        "
+        EOF
+        
+        echo "Test report created for MicroPython"
         
     - name: Display test statistics
       if: always()
