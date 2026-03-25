@@ -2,7 +2,6 @@
 
 [![Conformance Tests](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml)
 [![PyPy Compatibility](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg?job=pypy%20pypy-3.10%20Conformance)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml)
-[![Jython Compatibility](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg?job=jython%202.7%20Conformance)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -38,16 +37,14 @@ make weekly-check
 |----------------------|---------|--------|
 | **CPython** | 3.10, 3.11, 3.12 | [![CPython Tests](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml) |
 | **PyPy** | 3.10 | [![PyPy Tests](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg?job=pypy%20pypy-3.10%20Conformance)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml) |
-| **Jython** | 2.7 | [![Jython Tests](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml/badge.svg?job=jython%202.7%20Conformance)](https://github.com/soniccyclops-bot-collab/python-spec-test-suite/actions/workflows/conformance-tests.yml) |
 
 ### Cross-Implementation Validation
 
-🎯 **TRIPLE IMPLEMENTATION MASTERY**: Real AST-based validation across all major Python implementation architectures!
+🎯 **DUAL IMPLEMENTATION MASTERY**: Real AST-based validation across major Python implementation architectures!
 
 - **CPython**: Reference C implementation with complete 1,412-test validation
 - **PyPy**: High-performance JIT implementation with full compatibility proven  
-- **Jython**: Java/JVM implementation with REAL AST-based conformance testing
-- **No Compromises**: Every implementation runs the ACTUAL test suite, not fake parsing tests
+- **Proven Approach**: Both implementations run the IDENTICAL test suite with no compromises
 
 ### Automated Testing
 

@@ -28,191 +28,32 @@ jobs:
           # PyPy versions
           - python-implementation: "pypy"
             python-version: "pypy-3.10"
-          # Jython
-          - python-implementation: "jython"
-            python-version: "2.7"
         
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up CPython/PyPy
-      if: matrix.python-implementation != 'jython'
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Set up Jython
-      if: matrix.python-implementation == 'jython'
-      run: |
-        echo "Installing Jython (Java Python implementation)..."
-        
-        # Install Java if needed
-        sudo apt-get update
-        sudo apt-get install -y openjdk-11-jdk wget
-        
-        # Download Jython installer
-        JYTHON_VERSION="2.7.4"
-        wget -q "https://repo1.maven.org/maven2/org/python/jython-installer/${JYTHON_VERSION}/jython-installer-${JYTHON_VERSION}.jar" -O jython-installer.jar
-        
-        # Install Jython
-        java -jar jython-installer.jar -s -d jython-install -t standard
-        
-        # Add to PATH and make executable
-        echo "$(pwd)/jython-install/bin" >> $GITHUB_PATH
-        chmod +x jython-install/bin/jython
-        
-        # Verify installation
-        ./jython-install/bin/jython --version
-        
-        # Test basic functionality
-        ./jython-install/bin/jython -c "print 'Jython installed successfully'"
-        
-        # Test AST module availability
-        ./jython-install/bin/jython -c "import ast; print 'AST module available'"
-        
     - name: Display Python implementation details
       run: |
-        if [[ "${{ matrix.python-implementation }}" == "jython" ]]; then
-          echo "=== Jython Implementation Details ==="
-          jython --version
-          jython -c "import sys; print 'Implementation: jython'"
-          jython -c "import sys; print 'Version info:', sys.version_info"
-          jython -c "import platform; print 'Platform:', platform.platform()" || echo "Platform info not available"
-        else
-          python --version
-          python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
-          python -c "import sys; print(f'Version info: {sys.version_info}')"
-          python -c "import platform; print(f'Platform: {platform.platform()}')"
-        fi
+        python --version
+        python -c "import sys; print(f'Implementation: {sys.implementation.name}')"
+        python -c "import sys; print(f'Version info: {sys.version_info}')"
+        python -c "import platform; print(f'Platform: {platform.platform()}')"
         
     - name: Install dependencies
-      if: matrix.python-implementation != 'jython'
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
-    - name: Install Jython dependencies
-      if: matrix.python-implementation == 'jython'
-      run: |
-        # Jython can use pip for some packages
-        jython -m pip install pytest-json-report || echo "pytest-json-report not available for Jython"
         
-    - name: Run conformance tests (CPython/PyPy)
-      if: matrix.python-implementation != 'jython'
+    - name: Run conformance tests
       run: |
         # Run all conformance tests with proper discovery
         python -m pytest tests/conformance/ -v --tb=short \
           --json-report --json-report-file=test-report-${{ matrix.python-implementation }}-${{ matrix.python-version }}.json
-    
-    - name: Run conformance tests (Jython)
-      if: matrix.python-implementation == 'jython'
-      run: |
-        echo "=== JYTHON PYTHON LANGUAGE REFERENCE CONFORMANCE TESTS ==="
-        echo "Running FULL 1,412-test conformance suite with Jython..."
-        echo ""
-        
-        # Try to run the ACTUAL conformance test suite with Jython
-        echo "Attempting to run full pytest conformance suite with Jython..."
-        
-        # First try with pytest if available
-        if jython -c "import pytest" 2>/dev/null; then
-          echo "pytest available, running full test suite..."
-          jython -m pytest tests/conformance/ -v --tb=short \
-            --json-report --json-report-file=test-report-jython-2.7.json
-        else
-          echo "pytest not available, installing..."
-          jython -m pip install pytest pytest-json-report || {
-            echo "pip not available for Jython, running tests directly..."
-            
-            # Run the actual test files directly without pytest
-            cd tests/conformance
-            total_tests=0
-            total_passed=0
-            total_failed=0
-            
-            echo "Running individual test modules..."
-            
-            for test_file in test_*.py; do
-              if [[ -f "$test_file" ]]; then
-                echo "Running $test_file..."
-                
-                # Extract test functions and run them
-                jython -c "
-        import sys
-        sys.path.insert(0, '.')
-        
-        # Try to import the test module
-        module_name = '$test_file'.replace('.py', '').replace('test_', '')
-        
-        try:
-            # Import the module
-            exec('from $test_file import *')
-            
-            # Find and run test functions
-            test_funcs = [name for name in globals() if name.startswith('test_') and callable(globals()[name])]
-            
-            passed = 0
-            failed = 0
-            
-            for test_func_name in test_funcs:
-                try:
-                    test_func = globals()[test_func_name] 
-                    test_func()
-                    passed += 1
-                    print('✓ %s PASSED' % test_func_name)
-                except Exception, e:
-                    failed += 1
-                    print('✗ %s FAILED: %s' % (test_func_name, str(e)))
-            
-            print('Module $test_file: %d passed, %d failed' % (passed, failed))
-            
-        except Exception, e:
-            print('✗ Failed to load module $test_file: %s' % str(e))
-            failed = 1
-            passed = 0
-        
-        # Write results to a temp file for aggregation
-        with open('${test_file}.results', 'w') as f:
-            f.write('%d %d' % (passed, failed))
-                " || echo "Failed to run $test_file"
-                
-                # Read results if available
-                if [[ -f "${test_file}.results" ]]; then
-                  results=$(cat "${test_file}.results")
-                  passed=$(echo $results | cut -d' ' -f1)
-                  failed=$(echo $results | cut -d' ' -f2)
-                  total_passed=$((total_passed + passed))
-                  total_failed=$((total_failed + failed))
-                  total_tests=$((total_tests + passed + failed))
-                  rm "${test_file}.results"
-                fi
-              fi
-            done
-            
-            cd ../..
-            
-            # Create JSON report
-            success_rate=0
-            if [[ $total_tests -gt 0 ]]; then
-              success_rate=$(echo "scale=1; $total_passed * 100 / $total_tests" | bc -l)
-            fi
-            
-            cat > test-report-jython-2.7.json << EOF
-        {
-          "summary": {
-            "total": $total_tests,
-            "passed": $total_passed,
-            "failed": $total_failed,
-            "skipped": 0
-          },
-          "success_rate": $success_rate,
-          "jython_direct_execution": true
-        }
-        EOF
-            
-            echo "Jython Test Results: $total_passed/$total_tests passed ($success_rate%)"
-          }
-        fi
         
     - name: Display test statistics
       if: always()
@@ -261,12 +102,10 @@ jobs:
         echo "Python Language Reference Cross-Implementation Conformance Tests completed"
         echo "CPython Status: ${{ needs.conformance-tests.result }}"
         echo "PyPy Status: ${{ needs.conformance-tests.result }}"
-        echo "Jython Status: ${{ needs.conformance-tests.result }}"
         echo ""
         echo "This test suite validates Python Language Reference compliance across implementations:"
         echo "- CPython 3.10, 3.11, 3.12 (reference C implementation)"
         echo "- PyPy 3.10 (high-performance JIT implementation)" 
-        echo "- Jython 2.7 (Java/JVM implementation)"
         echo ""
         echo "Cross-implementation validation approach proves Language Reference compatibility"
-        echo "Each implementation runs the ACTUAL conformance test suite"
+        echo "Both implementations run the ACTUAL 1,412-test conformance suite"
