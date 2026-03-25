@@ -28,12 +28,15 @@ jobs:
           # PyPy versions
           - python-implementation: "pypy"
             python-version: "pypy-3.10"
+          # GraalPython (GraalPy)
+          - python-implementation: "graalpy"
+            python-version: "graalpy-25.0"
         
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up CPython/PyPy
-      uses: actions/setup-python@v4
+    - name: Set up Python implementations
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     
@@ -102,10 +105,12 @@ jobs:
         echo "Python Language Reference Cross-Implementation Conformance Tests completed"
         echo "CPython Status: ${{ needs.conformance-tests.result }}"
         echo "PyPy Status: ${{ needs.conformance-tests.result }}"
+        echo "GraalPy Status: ${{ needs.conformance-tests.result }}"
         echo ""
         echo "This test suite validates Python Language Reference compliance across implementations:"
         echo "- CPython 3.10, 3.11, 3.12 (reference C implementation)"
-        echo "- PyPy 3.10 (high-performance JIT implementation)" 
+        echo "- PyPy 3.10 (high-performance JIT implementation)"
+        echo "- GraalPy 25.0 (Oracle GraalVM polyglot implementation)"
         echo ""
         echo "Cross-implementation validation approach proves Language Reference compatibility"
-        echo "Both implementations run the ACTUAL 1,412-test conformance suite"
+        echo "All three implementations run the ACTUAL 1,412-test conformance suite"
