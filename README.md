@@ -83,10 +83,16 @@ make weekly-check
 
 ```
 python-spec-test-suite/
-├── tests/conformance/          # Generated conformance tests
-│   ├── section_2_6_numeric_literals.py
-│   └── SECTION_2_6_DOCUMENTATION.md  
-├── scripts/                    # Utility automation
+├── tests/conformance/          # Generated conformance tests (.py files only)
+│   ├── test_section_2_1_line_structure.py
+│   ├── test_section_2_2_other_tokens.py
+│   └── test_section_*.py       # All test implementations
+├── docs/                       # Documentation and specifications  
+│   ├── sections/               # Section-specific documentation
+│   │   ├── SECTION_2_1_DOCUMENTATION.md
+│   │   └── SECTION_*_DOCUMENTATION.md
+│   └── VERSION_AWARE_TESTING.md # Testing methodology
+├── scripts/                    # Utility automation  
 │   ├── fetch_new_peps.py      # PEP monitoring
 │   ├── parse_pep_changes.py   # Language Reference change detection
 │   ├── format_for_ai.py       # AI prompt generation
@@ -95,8 +101,8 @@ python-spec-test-suite/
 │   ├── last_check.json        # PEP processing state
 │   ├── pep_cache/             # Downloaded PEP content
 │   └── results/               # Test execution results
-├── Makefile                   # Build automation
-└── requirements.txt           # Python dependencies
+├── pyproject.toml             # Modern Python packaging
+└── Makefile                   # Build automation
 ```
 
 ## 📊 Complete Language Reference Coverage
