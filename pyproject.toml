@@ -62,7 +62,7 @@ where = ["."]
 include = ["tests*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/conformance"]
+testpaths = ["tests/conformance", "tests/stdlib"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
